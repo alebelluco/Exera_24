@@ -13,3 +13,4 @@ xlrd
 folium
 streamlit_folium
 openrouteservice
+PyGithub
