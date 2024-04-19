@@ -12,4 +12,3 @@ ipython
 xlrd
 folium
 streamlit_folium
-pickle
