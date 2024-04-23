@@ -1,5 +1,8 @@
 # Versione 23-04-2024
 
+# esportare in pickle l'agenda dal sw programmazione
+
+
 import streamlit as st
 from streamlit_folium import folium_static
 import matplotlib.pyplot as plt
@@ -71,10 +74,12 @@ with col2:
     #st.image('https://github.com/alebelluco/Test_EX/blob/main/exera_logo.png?raw=True')
     pass
 
+
 #percorso = st.sidebar.file_uploader("Caricare il programma Ferrara")
 #if not percorso:
 #    st.stop()
 #visualizzazione=pd.read_csv(percorso)
+
 
 layout  = {'Layout_select':['Check','Cliente','Sito','N_op','Op_vincolo','Indirizzo Sito','IstruzioniOperative','orari','Servizio','Periodicita','SitoTerritoriale','Citta',
                             'Durata_stimata','ID','lat','lng','date_range','Mensile'],
@@ -90,7 +95,9 @@ layout  = {'Layout_select':['Check','Cliente','Sito','N_op','Op_vincolo','Indiri
 
             'Agenda_edit' : ['Ordine_intervento','Durata_viaggio','Arrivo_da_precedente','Inizio','Durata_stimata','Fine','Cliente','Sito','Servizio','Periodicita','Operatore','lat','lng','Data','ID'],
                             
-            'Agenda_esporta' : ['Data','Inizio','Fine','Durata_stimata','IstruzioniOperative','Cliente','Sito','Servizio','Periodicita','Operatore']                
+            'Agenda_esporta' : ['Data','Inizio','Fine','Durata_stimata','IstruzioniOperative','Cliente','Sito','Indirizzo Sito', 'Servizio','Operatore'] ,
+
+            'Agenda_completa' : ['Operatore','Inizio','Fine','Durata_stimata','IstruzioniOperative','Cliente','Sito','Indirizzo Sito', 'Servizio']                
                             
                             
                             }
@@ -162,15 +169,39 @@ with tab4:
     if 'note' not in st.session_state:
         try:
             st.session_state.note = pe.retrieve_file(username, token,repository_name, file_path_note)
+            st.write(st.session_state.note)
+      
         except:
+            
             st.session_state.note = {}
+            #st.write(st.session_state.note)
 
     def refresh():
         #salva e recupera il file pickled dell'agenda da github
-        pe.upload_file(username,token,st.session_state.agenda, repository_name, file_path)
-        st.session_state.agenda = pe.retrieve_file(username, token,repository_name, file_path)
-        pe.upload_file(username,token,st.session_state.note, repository_name, file_path_note)
-        st.session_state.note = pe.retrieve_file(username, token,repository_name, file_path_note)
+        try:
+            last = pe.retrieve_file(username, token,repository_name, file_path)
+            st.write('LAST',last)
+            aggiornato = pd.concat([st.session_state.agenda, last])
+            st.write('aggiornato',aggiornato)
+            aggiornato = aggiornato.drop_duplicates(subset=['ID'])
+            st.write('aggiornato no dupl',aggiornato)
+            pe.upload_file(username,token,aggiornato, repository_name, file_path)
+            st.session_state.agenda = aggiornato
+            #st.session_state.agenda = pe.retrieve_file(username, token,repository_name, file_path)
+            st.write('agenda',st.session_state.agenda)
+
+
+        except:
+            aggiornato = st.session_state.agenda
+            pe.upload_file(username,token,aggiornato, repository_name, file_path)
+            st.session_state.agenda = pe.retrieve_file(username, token,repository_name, file_path)
+            st.write('agenda_problema caricameto',st.session_state.agenda)
+        
+        try:
+            pe.upload_dict(username,token,st.session_state.note, repository_name, file_path_note)
+            st.session_state.note = pe.retrieve_file(username, token,repository_name, file_path_note)
+        except:
+            pass
 
         
     def callback3():    
@@ -204,26 +235,38 @@ with tab4:
     work = st.session_state.altri_siti.copy()
     work = work[[any(sito in word for sito in scelta_sito) for word in work['SitoTerritoriale'].astype(str)]]
 
-
-
-    improrogabili = list(work.ID[[len(date)==1 for date in work.date_range ]])
-    st.write(f'{len(improrogabili)} interventi improrogabili nel sito nella data selezionata')
     
     if st.toggle('Mostra tutti gli interventi del mese'):
         work = work
+        improrogabili = list(work.ID[[len(date)==1 for date in work.date_range ]])
+        st.write(f'{len(improrogabili)} interventi improrogabili nel sito nel mese')
+
     else:
         work = work[[str(scelta_giorno.day) in tgtrange for tgtrange in work.date_range]]
+        improrogabili = list(work.ID[[len(date)==1 for date in work.date_range ]])
+        st.write(f'{len(improrogabili)} interventi improrogabili nel sito nella data selezionata')
+
 
 
     if st.toggle('Mostra improrogabili'):
-        work = work[[len(date)==1 for date in work.date_range ]]
+        try:
+            work = work[[len(date)==1 for date in work.date_range ]]
+        except:
+            st.write('nessun intervento')
     else:
         work = work
 
+
     if st.toggle(('2Operatori')):
-        work = work[work['N_op']==' 2 OPERATORI']
+        try:
+            work = work[work['N_op']==' 2 OPERATORI']
+        except:
+            st.write('Nessun intervento')
     else:
-        work = work[work['N_op']!=' 2 OPERATORI']
+        try:
+            work = work[work['N_op']!=' 2 OPERATORI']
+        except:
+            st.write('Nessun intervento')
 
     work['Operatore'] = None
 
@@ -233,10 +276,12 @@ with tab4:
          st.write(':orange[Nessun intervento sul sito disponibile nelle date selezionate]')
 
     coordinate_inizio  = coordinate_inizio[(coordinate_inizio.lat != 0) & (coordinate_inizio.lat.astype(str) != 'nan')]
+
     if len(coordinate_inizio) != 0:
          inizio = (coordinate_inizio.lat.iloc[0],coordinate_inizio.lng.iloc[0])
     else:
          st.write(':orange[Nessun intervento nei siti selezionati]')
+         inizio = (coordinate_exera[1],coordinate_exera[0])
          
     try:
         mensili = {'si':'red','no':'blue'}
@@ -245,15 +290,6 @@ with tab4:
 
         for i in range(len(work)):
             try:
-                #folium.Marker(location=(work.lat.iloc[i],work.lng.iloc[i]),
-                #            popup = work.Cliente.iloc[i]+'----------'+ work.Servizio.iloc[i]+'--------- Durata: '+
-                #         str(work['Durata_stimata'].iloc[i]),color='red').add_to(mappa)
-                
-                #folium.CircleMarker(location=(work.lat.iloc[i],work.lng.iloc[i]),
-                #                 popup = work.Cliente.iloc[i]+'----------'+ work.Servizio.iloc[i]+'--------- Durata: '+
-                    #      str(work['Durata_stimata'].iloc[i]),fill=True, color='red', radius=4, stroke=False
-                    #              )
-                
                 folium.CircleMarker(location=[work.lat.iloc[i], work.lng.iloc[i]],
                                     radius=4,
                                     color=mensili[work.Mensile.iloc[i]],
@@ -285,9 +321,6 @@ with tab4:
             agenda_work = st.session_state.agenda.copy()
             agenda_work = agenda_work[agenda_work.Operatore == nome_cognome]
             agenda_work = agenda_work[agenda_work.Data == scelta_giorno]
-            #agenda_work['Data'] = scelta_giorno
-            #st.data_editor(agenda_work[layout['Layout_agenda_work']],width=1500, column_config = {'Inizio':st.column_config.TimeColumn("Inizio",min_value=time(6, 0),max_value=time(20, 0),format="hh:mm "),
-            #                                                                                      'Fine':st.column_config.TimeColumn("Fine",min_value=time(6, 0),max_value=time(20, 0),format="hh:mm ")})
             agenda_work[layout['Layout_agenda_work']]
             
     # Cruscotto dati giornata
@@ -347,6 +380,7 @@ with tab4:
             st.subheader('Ore totali agenda: {:0.2f}'.format(viaggio + tempo/60))
     except:
         pass
+
 with tab5:
 
     def callback_modifica_agenda():
@@ -394,7 +428,6 @@ with tab5:
 
     def callback_nota():
         st.session_state.note[str(data_agenda)] = nota
-    #st.dataframe(st.session_state.agenda)
 
     sx5, cx5, dx5 = st.columns([3,6,1])
     with sx5:
@@ -418,8 +451,7 @@ with tab5:
     agenda_edit = st.session_state.agenda.copy()
     agenda_edit = agenda_edit[agenda_edit['Operatore'] == op_modifica]
     agenda_edit = agenda_edit[agenda_edit.Data == data_agenda]
-    #agenda_edit = st.data_editor(agenda_edit[layout['Agenda_edit']],width=1500, column_config = {'Inizio':st.column_config.TimeColumn("Inizio",min_value=time(6, 0),max_value=time(20, 0),format="hh:mm "),
-  #                                                                                            'Fine':st.column_config.TimeColumn("Fine",min_value=time(6, 0),max_value=time(20, 0),format="hh:mm ")})
+    
     try:
         open_agenda = (agenda_edit.lat.iloc[0],  agenda_edit.lng.iloc[0])
     except:
@@ -452,20 +484,31 @@ submit_button3 = st.sidebar.button('Refresh', on_click=refresh)
 
 with tab6:
 
+
+
+
     st.subheader('Esporta agenda', divider='orange')
-    op_modifica_exp = st.selectbox("Selezionare operatore", operatori)
-    if not op_modifica_exp:
-        st.stop()
     data_agenda_exp = st.date_input('Selezionare giornata')
     if not data_agenda_exp:
         st.stop()
 
-    agenda_edit_exp = st.session_state.agenda.copy()
-    agenda_edit_exp = agenda_edit_exp[agenda_edit_exp['Operatore'] == op_modifica_exp]
-    agenda_edit_exp = agenda_edit_exp[agenda_edit_exp.Data == data_agenda_exp]
+    if not st.toggle('Visualizza tutti gli operatori'):
 
-    filename_agenda = f'Agenda_{data_agenda_exp} | {op_modifica_exp}'
-    download = st.data_editor(agenda_edit_exp[layout['Agenda_esporta']])
+        op_modifica_exp = st.selectbox("Selezionare operatore", operatori)
+        if not op_modifica_exp:
+            st.stop()
+        agenda_edit_exp = st.session_state.agenda.copy()
+        agenda_edit_exp = agenda_edit_exp[agenda_edit_exp['Operatore'] == op_modifica_exp]
+        agenda_edit_exp = agenda_edit_exp[agenda_edit_exp.Data == data_agenda_exp]
+        filename_agenda = f'Agenda_{data_agenda_exp} | {op_modifica_exp}'
+        download = st.data_editor(agenda_edit_exp[layout['Agenda_esporta']])
+    else:
+        agenda_edit_exp = st.session_state.agenda.copy()
+        agenda_edit_exp = agenda_edit_exp[agenda_edit_exp.Data == data_agenda_exp]
+        filename_agenda = f'Agenda_{data_agenda_exp} | tutti gli operatori'
+        download = st.data_editor(agenda_edit_exp[layout['Agenda_completa']])
+
+    
 
     def scarica_excel(df, filename):
         output = BytesIO()
