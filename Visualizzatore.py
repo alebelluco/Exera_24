@@ -180,22 +180,22 @@ with tab4:
         #salva e recupera il file pickled dell'agenda da github
         try:
             last = pe.retrieve_file(username, token,repository_name, file_path)
-            st.write('LAST',last)
+            #st.write('LAST',last)
             aggiornato = pd.concat([st.session_state.agenda, last])
-            st.write('aggiornato',aggiornato)
+            #st.write('aggiornato',aggiornato)
             aggiornato = aggiornato.drop_duplicates(subset=['ID'])
-            st.write('aggiornato no dupl',aggiornato)
+            #st.write('aggiornato no dupl',aggiornato)
             pe.upload_file(username,token,aggiornato, repository_name, file_path)
             st.session_state.agenda = aggiornato
             #st.session_state.agenda = pe.retrieve_file(username, token,repository_name, file_path)
-            st.write('agenda',st.session_state.agenda)
+            #st.write('agenda',st.session_state.agenda)
 
 
         except:
             aggiornato = st.session_state.agenda
             pe.upload_file(username,token,aggiornato, repository_name, file_path)
             st.session_state.agenda = pe.retrieve_file(username, token,repository_name, file_path)
-            st.write('agenda_problema caricameto',st.session_state.agenda)
+            #st.write('agenda_problema caricameto',st.session_state.agenda)
         
         try:
             pe.upload_dict(username,token,st.session_state.note, repository_name, file_path_note)
