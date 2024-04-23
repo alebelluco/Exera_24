@@ -12,6 +12,8 @@ import folium
 import openrouteservice
 import pickle
 from utils import persistence_ab as pe
+from io import BytesIO
+import xlsxwriter
 
 st.set_page_config(page_title="Planner interventi", layout='wide')
 
@@ -446,9 +448,7 @@ with tab5:
         modifica_agenda = st.data_editor(modifica_agenda[layout['Layout_select']])
         remove_button = st.button(label='Rimuovi interventi', on_click=callback4)
 
-
 submit_button3 = st.sidebar.button('Refresh', on_click=refresh)
-
 
 with tab6:
 
@@ -464,4 +464,20 @@ with tab6:
     agenda_edit_exp = agenda_edit_exp[agenda_edit_exp['Operatore'] == op_modifica_exp]
     agenda_edit_exp = agenda_edit_exp[agenda_edit_exp.Data == data_agenda_exp]
 
-    st.data_editor(agenda_edit_exp[layout['Agenda_esporta']])
+    filename_agenda = f'Agenda_{data_agenda_exp} | {op_modifica_exp}'
+    download = st.data_editor(agenda_edit_exp[layout['Agenda_esporta']])
+
+    def scarica_excel(df, filename):
+        output = BytesIO()
+        writer = pd.ExcelWriter(output, engine='xlsxwriter')
+        df.to_excel(writer, sheet_name='Sheet1', index=False)
+        writer.close()
+        st.download_button(
+            label="Download Excel workbook",
+            data=output.getvalue(),
+            file_name=filename,
+            mime="application/vnd.ms-excel"
+        )
+
+    scarica_excel(download, filename_agenda)
+    
