@@ -17,6 +17,7 @@ import pickle
 from utils import persistence_ab as pe
 from io import BytesIO
 import xlsxwriter
+import random
 
 st.set_page_config(page_title="Planner interventi", layout='wide')
 
@@ -40,7 +41,6 @@ credenziali=pd.read_excel(cred)
 username = credenziali.Dati.iloc[0]
 token = credenziali.Dati.iloc[1]
 repository_name  = credenziali.Dati.iloc[2]
-
 file_path  = credenziali.Dati.iloc[3]
 file_path_note_valentina = credenziali.Dati.iloc[4]
 file_path_note_giorgia = credenziali.Dati.iloc[5]
@@ -57,12 +57,13 @@ path_note_git = {
 }
 
 
-
-
-
 coordinate_exera = (11.594276, 44.817830)
 
 operatori = [
+ 'JOLLY',
+ 'SQUADRA1',
+ 'SQUADRA2',
+ 'SQUADRA3',
  'FURLATTI STEFANO',
  'SACCENTI FABRIZIO',
  'ALTIERI NICO',
@@ -89,11 +90,6 @@ with headcx:
     placeholder2 = st.empty()
 with headdx:
     placeholder3 =  st.empty()
-
-
-
-
-
 
 
 col1, col2 = st.columns([4,1])
@@ -129,7 +125,7 @@ layout  = {'Layout_select':['Check','Cliente','Sito','N_op','Op_vincolo','Indiri
                                                         
                             }
 
-tab4, tab5, tab6= st.tabs(['Assegna interventi','Agende', 'Esporta agenda'])
+tab4, tab5, tab6, tab7= st.tabs(['Assegna interventi','Agende', 'Esporta agenda', 'Mappa pianificati'])
 
 with tab4:
 
@@ -178,6 +174,7 @@ with tab4:
         #st.session_state.altri_siti = st.session_state.altri_siti.merge(vincolo_nop, how='left',left_on='ID',right_on='ID')   
         #st.session_state.altri_siti = st.session_state.altri_siti.rename(columns={'N_op_x':'N_op','Op_vincolo_x':'Op_vincolo'})
         #st.session_state.altri_siti = st.session_state.altri_siti.drop(columns=['Note','Target_range','no_spazi','appoggio','appoggio2','N_op_y','Op_vincolo_y'])
+
 
     if 'agenda' not in st.session_state:
         try:
@@ -293,7 +290,11 @@ with tab4:
             #------------------------------------------
 
             # Qui recupero l'agenda 
-            agenda_git = pe.retrieve_file(username, token,repository_name, file_path)
+            try:
+                agenda_git = pe.retrieve_file(username, token,repository_name, file_path)
+            except:
+                agenda_git = st.session_state.agenda
+
             agenda_git['Elimina'] = None
 
             # elimino le righe da eliminare
@@ -323,7 +324,7 @@ with tab4:
             
             # elimino colonne create per fare i confronti 
             agenda_git = agenda_git.drop(columns=['Elimina'])        
-            #st.write('agenda_git', agenda_git)
+            st.write('agenda_git', agenda_git)
 
             pe.upload_file(username,token,agenda_git, repository_name, file_path)
             st.session_state.agenda = agenda_git
@@ -395,7 +396,11 @@ with tab4:
     if not scelta_sito:
          st.stop()
     work = st.session_state.altri_siti.copy()
+
+    
+
     work = work[[any(sito in word for sito in scelta_sito) for word in work['SitoTerritoriale'].astype(str)]]
+    
 
     if st.toggle('Mostra tutti gli interventi del mese'):
         work = work
@@ -404,16 +409,32 @@ with tab4:
 
     else:
         work = work[[str(scelta_giorno.day) in tgtrange for tgtrange in work.date_range]]
+        #st.write('work',work)
+
         improrogabili = list(work.ID[[len(date)==1 for date in work.date_range ]])
         st.write(f'{len(improrogabili)} interventi improrogabili nel sito nella data selezionata')
 
+
     if st.toggle('Mostra improrogabili'):
-        try:
+        try:            
             work = work[[len(date)==1 for date in work.date_range ]]
         except:
             st.write('nessun intervento')
-    else:
+    else:       
         work = work
+
+
+    if st.toggle('Mostra interventi con disponibilità ristretta'):
+        try:            
+            work = work[[len(date)<=5 for date in work.date_range ]]
+        except:
+            st.write('nessun intervento')
+    else:       
+        work = work
+
+
+
+
 
 
     if st.toggle(('2Operatori')):
@@ -427,7 +448,30 @@ with tab4:
         except:
             st.write('Nessun intervento')
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     work['Operatore'] = None
+    
+
+
+
+
+
 
     try:
         coordinate_inizio = work[['Cliente','lat','lng']].copy()
@@ -444,13 +488,30 @@ with tab4:
          
     try:
         mensili = {'si':'red','no':'blue'}
+        centro_mappa = st.session_state.agenda.copy()
+        #st.write(centro_mappa)
+        #st.write(scelta_giorno)
+        #st.write(centro_mappa.Data.iloc[-1])
+        #st.stop()
+        #centro_mappa = centro_mappa[centro_mappa.Operatore == nome_cognome]
+        #centro_mappa = centro_mappa[centro_mappa.Data == scelta_giorno]
+        #st.write(centro_mappa)
+        #st.stop()
+
+        lat_inizio = centro_mappa.lat.iloc[-1]
+        lng_inizio = centro_mappa.lng.iloc[-1]
+
+
         
-        mappa=folium.Map(location=inizio,zoom_start=15)
+
+
+        #mappa=folium.Map(location=inizio,zoom_start=15)
+        mappa=folium.Map(location=(lat_inizio,lng_inizio),zoom_start=15)
 
         for i in range(len(work)):
             try:
                 folium.CircleMarker(location=[work.lat.iloc[i], work.lng.iloc[i]],
-                                    radius=4,
+                                    radius=7,
                                     color=mensili[work.Mensile.iloc[i]],
                                     stroke=False,
                     fill=True,
@@ -464,7 +525,7 @@ with tab4:
                 st.write('Cliente {} non visibile sulla mappa per mancanza di coordinate su Byron'.format(work.Cliente.iloc[i]))
                 pass
             
-        folium_static(mappa,width=2500,height=800)
+        folium_static(mappa,width=1800,height=800)
 
         work = st.data_editor(work[layout['Layout_select']])
 
@@ -548,6 +609,9 @@ with tab5:
                 if agenda_edit.ID.iloc[j] == st.session_state.agenda.ID.iloc[i]:
                     st.session_state.agenda.Inizio.iloc[i] = agenda_edit.Inizio.iloc[j]#.time()
                     st.session_state.agenda.Ordine_intervento.iloc[i] = agenda_edit.Ordine_intervento.iloc[j]
+                    st.session_state.agenda.Operatore.iloc[i] = agenda_edit.Operatore.iloc[j]
+                    st.session_state.agenda.Durata_stimata.iloc[i] = agenda_edit.Durata_stimata.iloc[j]
+                    
                     #calcolo ora di fine + viaggio
 
                     if calcola_distanze:
@@ -664,29 +728,79 @@ with tab5:
     except:
         open_agenda = inizio
 
-    mappa2=folium.Map(location=open_agenda,zoom_start=13)
-    for i in range(len(agenda_edit)):
-        try:
-            folium.Marker(location=(agenda_edit.lat.iloc[i],agenda_edit.lng.iloc[i]),
-                          popup = agenda_edit.Cliente.iloc[i]+'----------'+ agenda_edit.Servizio.iloc[i]+'--------- Durata: '+
-                        str(agenda_edit['Durata_stimata'].iloc[i])).add_to(mappa2)
-        except:
-            st.write('Cliente {} non visibile sulla mappa per mancanza di coordinate su Byron'.format(agenda_edit.Cliente.iloc[i]))
-            pass
-    with sx5:    
-        folium_static(mappa2,width=w_mappa,height=h_mappa)
+    try:
+        mappa2=folium.Map(location=open_agenda,zoom_start=13)
+        for i in range(len(agenda_edit)):
+                try:
+                    folium.Marker(location=(agenda_edit.lat.iloc[i],agenda_edit.lng.iloc[i]),
+                                popup = agenda_edit.Cliente.iloc[i]+'----------'+ agenda_edit.Servizio.iloc[i]+'--------- Durata: '+
+                                str(agenda_edit['Durata_stimata'].iloc[i])).add_to(mappa2)
+                except:
+                    st.write('Cliente {} non visibile sulla mappa per mancanza di coordinate su Byron :orange[(potrebbe essere inserito urgente)]'.format(agenda_edit.Cliente.iloc[i]))
+                    pass
+        with sx5:    
+                folium_static(mappa2,width=w_mappa,height=h_mappa)
+    except:
+        st.write('Mappa non disponibile per assenza di coordinate | :orange[(verifica interventi urgenti)]')
+
+    def callback_urgente():
+        st.session_state.agenda = pd.concat([st.session_state.agenda, to_add])
+
+    def callback_cambia_op():
+        op_check = op_modifica
+        op_new = operatore_new
+        data_check = str(data_agenda)
+        for i in range(len(st.session_state.agenda)):
+            op = st.session_state.agenda.Operatore.iloc[i]
+            data = str(st.session_state.agenda.Data.iloc[i])
+            if op == op_check and data == data_check:
+                st.session_state.agenda.Operatore.iloc[i] = op_new
+    
 
     agenda_edit['Ordine_intervento'] =  agenda_edit['Ordine_intervento'].astype(float)
     agenda_edit = st.data_editor(agenda_edit[layout['Agenda_edit']], on_change=None)
     submit_button2 = st.button(label='Modifica agenda', on_click=callback_modifica_agenda)
 
+    urgente = st.toggle(':red[Aggiungi urgente]')
+    if urgente:
+
+        cliente = st.text_input('Cliente')
+        servizio = st.text_input('Servizio')
+        durata = st.number_input('Durata stimata')
+
+        if not (cliente and servizio and durata):
+            st.stop()
+
+        to_add = pd.DataFrame(columns=['ID','Cliente','Servizio','Data','Operatore','IstruzioniOperative','lat','lng', 'Check', 'Durata_stimata'])
+        to_add.loc[0]=''
+        to_add.Cliente.loc[0]=cliente
+        to_add.Servizio.loc[0]=servizio
+        to_add.Durata_stimata.loc[0]=durata
+        to_add.Data.loc[0] = data_agenda
+        to_add.Operatore.loc[0] = 'JOLLY'
+        to_add.ID.loc[0]=random.randint(1000000000,3000000000)
+        to_add.Check.loc[0]=True
+        #to_add.lat.loc[0] = coordinate_exera[1]
+        #to_add.lng.loc[0] = coordinate_exera[0]
+       # to_add = st.data_editor(to_add, width=1500)
+        submit_button_urgente = st.button(label='Aggiungi urgente',on_click=callback_urgente)
+
+    if st.toggle('Trasferisci agenda'):
+        operatore_new = st.selectbox("Selezionare operatore a cui trasferire l'agenda",operatori)
+        submit_button_trasferisci = st.button(label='Trasferisci',on_click=callback_cambia_op)
+        
+    
+
     abilita_rimozione = st.toggle('Rimuovi interventi pianificati')
     if abilita_rimozione:
-        modifica_agenda = st.session_state.agenda.copy()
-        modifica_agenda = modifica_agenda[modifica_agenda.Data == data_agenda]
-        modifica_agenda = modifica_agenda[modifica_agenda['Operatore']==op_modifica]
-        modifica_agenda = st.data_editor(modifica_agenda[layout['Layout_select']])
-        remove_button = st.button(label='Rimuovi interventi', on_click=callback4)
+        try:
+            modifica_agenda = st.session_state.agenda.copy()
+            modifica_agenda = modifica_agenda[modifica_agenda.Data == data_agenda]
+            modifica_agenda = modifica_agenda[modifica_agenda['Operatore']==op_modifica]
+            modifica_agenda = st.data_editor(modifica_agenda[layout['Layout_select']])
+            remove_button = st.button(label='Rimuovi interventi', on_click=callback4)
+        except:
+            pass
 
 with placeholder:
     submit_button3 = st.button('Refresh', on_click=refresh_new)
@@ -712,12 +826,13 @@ with tab6:
     else:
         agenda_edit_exp = st.session_state.agenda.copy()
         
-        #st.write(op_unici)
-        agenda_edit_exp = agenda_edit_exp[agenda_edit_exp.Data == data_agenda_exp]
-        op_unici = list(agenda_edit_exp.Operatore.unique())
-
         
-        ganttsx, ganttdx = st.columns([6,10])
+        agenda_edit_exp = agenda_edit_exp[agenda_edit_exp.Data == data_agenda_exp]
+
+        op_unici = list(agenda_edit_exp.Operatore.unique())
+        #st.write(op_unici)
+        
+        ganttsx, ganttdx = st.columns([10,6])
         #fig, ax = plt.subplots(figsize=(10,10))
         #n=0
         for op in op_unici:
@@ -727,7 +842,7 @@ with tab6:
 
             with ganttsx:
                 st.subheader(op)
-                st.dataframe(plot, width=700)
+                st.dataframe(plot, width=1000)
                 
             gantt = plot.copy()
             
@@ -737,25 +852,42 @@ with tab6:
                 gantt['pos_text'] = gantt['Start_gantt']+1#gantt['Durata_stimata']/2 - 3
 
             except Exception as e:
-                st.write('Grafico non disponibile, compilare orari')
+                st.write(f'Operatore {op} | Grafico non disponibile, compilare orari')
 
 
             try:
-                fig, ax = plt.subplots(figsize=(15,1))
-                ax.barh(1.3, gantt['Durata_stimata'], left=gantt['Start_gantt'], color='orange') 
+                #fig, ax = plt.subplots(figsize=(15,1))
+                #ax.barh(1.3, gantt['Durata_stimata'], left=gantt['Start_gantt'], color='orange') 
 
-                #ax.bar(n,gantt['Durata_stimata'], bottom=gantt['Start_gantt'], color='orange')
-                #ax.barh(1,gantt['Durata_stimata'], color='orange') 
+            
+                #for i in range (len(gantt)):
+                #    ax.text(gantt['pos_text'].iloc[i]-22,0.2, str(gantt.Start.iloc[i]),rotation=45)
+                 #   ax.text(gantt['pos_text'].iloc[i]+gantt['Durata_stimata'].iloc[i]-24,0.2,str(gantt.Fine.iloc[i] ), rotation=45)
+                  #  ax.text(gantt['pos_text'].iloc[i],2,gantt.Cliente.iloc[i], rotation=90)
+                   # pass
                 
+                fig, ax = plt.subplots(figsize=(10,10))
+                
+                ax.bar(0.5,gantt['Durata_stimata'], bottom=gantt['Start_gantt'], color='orange', width=2)
                 for i in range (len(gantt)):
-                    ax.text(gantt['pos_text'].iloc[i],0, str(gantt.Start.iloc[i]),rotation=90)
-                    ax.text(gantt['pos_text'].iloc[i]+gantt['Durata_stimata'].iloc[i]-8,0,str(gantt.Fine.iloc[i] ), rotation=90)
                     pass
+
+                for i in range (len(gantt)):
+                    
+                    ax.text(1.52,gantt['pos_text'].iloc[i]-5, str(gantt.Start.iloc[i]),rotation=0)
+                    ax.text(1.7,gantt['pos_text'].iloc[i]+gantt['Durata_stimata'].iloc[i]-5,str(gantt.Fine.iloc[i] ), rotation=0)
+                    ax.text(0.12,gantt['pos_text'].iloc[i]+gantt['Durata_stimata'].iloc[i]/2-5,gantt.Cliente.iloc[i], rotation=0)
+
+
+
+
+
 
                 ax.spines['top'].set_visible(False)
                 ax.spines['right'].set_visible(False)
                 ax.spines['bottom'].set_visible(False)
                 ax.spines['left'].set_visible(False)
+                
 
                 
 
@@ -763,8 +895,9 @@ with tab6:
 
                     st.subheader(op)
                     #st.write(op)
-                    #plt.ylim(480,1080)
-                    plt.xlim(480,1020)
+                    plt.ylim(480,1080)
+                    #plt.xlim(480,1020)
+                    plt.xlim(0,2)
                     plt.yticks([])
                     plt.xticks([])
 
@@ -773,17 +906,15 @@ with tab6:
 
             except Exception as e:
                 with ganttdx:
-                    st.write(e)
-                    st.write('Grafico non disponibile')
+                    #st.write(e)
+                    pass
+                    #st.write('Grafico non disponibile')
                 
                 pass
 
        # with ganttdx:
          #   st.pyplot(fig)
            
-                
-            
-
 
         #agenda_edit_exp = agenda_edit_exp[agenda_edit_exp.Data == data_agenda_exp]
         filename_agenda = f'Agenda_{data_agenda_exp} | tutti gli operatori'
@@ -804,3 +935,36 @@ with tab6:
 
     #scarica_excel(download, filename_agenda)
     
+
+with tab7:
+
+    data_planned  = st.date_input('selezionare data')
+    try:
+        planned = st.session_state.agenda.copy()
+        planned = planned[[data == data_planned for data in planned.Data]]
+
+
+        #mensili = {'si':'red','no':'blue'}
+        
+        mappa_planned=folium.Map(location=(coordinate_exera[1],coordinate_exera[0]),zoom_start=10)
+
+        for i in range(len(work)):
+            try:
+                folium.CircleMarker(location=[planned.lat.iloc[i], planned.lng.iloc[i]],
+                                    radius=5,
+                                    color='blue',#mensili[work.Mensile.iloc[i]],
+                                    stroke=False,
+                    fill=True,
+                    fill_opacity=1,
+                    opacity=1,
+                    popup=planned.Operatore.iloc[i] +' - '+ planned.Cliente.iloc[i]
+                    #tooltip=cluster,
+                    ).add_to(mappa_planned)
+            except:
+                #st.write('Cliente {} non visibile sulla mappa per mancanza di coordinate su Byron'.format(work.Cliente.iloc[i]))
+                pass
+            
+        folium_static(mappa_planned,width=2000,height=800)
+
+    except:
+        pass
