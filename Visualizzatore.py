@@ -324,7 +324,7 @@ with tab4:
             
             # elimino colonne create per fare i confronti 
             agenda_git = agenda_git.drop(columns=['Elimina'])        
-            st.write('agenda_git', agenda_git)
+            #st.write('agenda_git', agenda_git)
 
             pe.upload_file(username,token,agenda_git, repository_name, file_path)
             st.session_state.agenda = agenda_git
@@ -397,11 +397,8 @@ with tab4:
          st.stop()
     work = st.session_state.altri_siti.copy()
 
-    
-
     work = work[[any(sito in word for sito in scelta_sito) for word in work['SitoTerritoriale'].astype(str)]]
     
-
     if st.toggle('Mostra tutti gli interventi del mese'):
         work = work
         improrogabili = list(work.ID[[len(date)==1 for date in work.date_range ]])
@@ -433,10 +430,6 @@ with tab4:
         work = work
 
 
-
-
-
-
     if st.toggle(('2Operatori')):
         try:
             work = work[work['N_op']==' 2 OPERATORI']
@@ -448,31 +441,8 @@ with tab4:
         except:
             st.write('Nessun intervento')
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     work['Operatore'] = None
     
-
-
-
-
-
-
     try:
         coordinate_inizio = work[['Cliente','lat','lng']].copy()
     except:
@@ -498,8 +468,12 @@ with tab4:
         #st.write(centro_mappa)
         #st.stop()
 
-        lat_inizio = centro_mappa.lat.iloc[-1]
-        lng_inizio = centro_mappa.lng.iloc[-1]
+        try:
+            lat_inizio = centro_mappa.lat.iloc[-1]
+            lng_inizio = centro_mappa.lng.iloc[-1]
+        except:
+            lat_inizio = work.lat.iloc[0]
+            lng_inizio = work.lng.iloc[1]
 
 
         
@@ -508,6 +482,17 @@ with tab4:
         #mappa=folium.Map(location=inizio,zoom_start=15)
         mappa=folium.Map(location=(lat_inizio,lng_inizio),zoom_start=15)
 
+        #stampo il punto dell'ultimo intervento
+
+        folium.CircleMarker(location=(lat_inizio,lng_inizio),
+                                    radius=30,
+                                    color='red',
+                                    stroke=False,
+                    fill=True,
+                    fill_opacity=0.8,
+                    opacity=1,
+                    ).add_to(mappa)
+        
         for i in range(len(work)):
             try:
                 folium.CircleMarker(location=[work.lat.iloc[i], work.lng.iloc[i]],
