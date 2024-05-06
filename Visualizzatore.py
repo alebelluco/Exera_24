@@ -123,7 +123,8 @@ layout  = {'Layout_select':['Check','Cliente','Sito','N_op','Op_vincolo','Indiri
 
             'Refresh' : ['ID', 'Confronto','key']  ,   
 
-            'Mappa'  : ['Check','Cliente','Durata_stimata','Servizio','Sito','Indirizzo Sito','ID']       
+            'Mappa'  : ['Check','Cliente','Durata_stimata', 'Servizio','Sito','N_op','Op_vincolo','Indirizzo Sito','IstruzioniOperative','orari','Periodicita','SitoTerritoriale','Citta',
+                            'ID','lat','lng','Operatore','date_range','Mensile']      
                                                         
                             }
 
