@@ -455,7 +455,7 @@ with tab4:
     else:
          st.write(':orange[Nessun intervento nei siti selezionati]')
          inizio = (coordinate_exera[1],coordinate_exera[0])
-         
+
     try:
         mensili = {'si':'red','no':'blue'}
         centro_mappa = st.session_state.agenda.copy()
@@ -468,20 +468,27 @@ with tab4:
         #st.write(centro_mappa)
         #st.stop()
 
+
+
         try:
             lat_inizio = centro_mappa.lat.iloc[-1]
             lng_inizio = centro_mappa.lng.iloc[-1]
+            if not lat_inizio:
+                lat_inizio = work.lat.iloc[1]
+                lng_inizio = work.lng.iloc[0]
+                if not lat_inizio:
+                    lat_inizio = coordinate_exera[1]
+                    lng_inizio = coordinate_exera[0]
+
+     
         except:
-            lat_inizio = work.lat.iloc[0]
-            lng_inizio = work.lng.iloc[1]
-
-
-        
+            lat_inizio = work.lat.iloc[1]
+            lng_inizio = work.lng.iloc[0]
 
 
         #mappa=folium.Map(location=inizio,zoom_start=15)
         mappa=folium.Map(location=(lat_inizio,lng_inizio),zoom_start=15)
-
+        
         #stampo il punto dell'ultimo intervento
 
         folium.CircleMarker(location=(lat_inizio,lng_inizio),
@@ -509,6 +516,7 @@ with tab4:
             except:
                 st.write('Cliente {} non visibile sulla mappa per mancanza di coordinate su Byron'.format(work.Cliente.iloc[i]))
                 pass
+            
             
         folium_static(mappa,width=1800,height=800)
 
