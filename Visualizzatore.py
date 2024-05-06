@@ -113,7 +113,7 @@ layout  = {'Layout_select':['Check','Cliente','Sito','N_op','Op_vincolo','Indiri
 
             'Layout_agenda_work':['Durata_stimata','Cliente','Sito','Servizio','Periodicita','Operatore','lat','lng','Data','Mensile'],
 
-            'Agenda_edit' : ['Ordine_intervento','Durata_viaggio','Arrivo_da_precedente','Inizio','Durata_stimata','Fine','Cliente','Sito','Servizio','Periodicita','Operatore','lat','lng','Data','ID'],
+            'Agenda_edit' : ['IstruzioniOperative','Ordine_intervento','Durata_viaggio','Arrivo_da_precedente','Inizio','Durata_stimata','Fine','Cliente','Sito','Servizio','Periodicita','Operatore','lat','lng','Data','ID'],
                             
             'Agenda_esporta' : ['Data','Inizio','Fine','Durata_stimata','IstruzioniOperative','Cliente','Sito','Indirizzo Sito', 'Servizio','Operatore'] ,
 
@@ -610,6 +610,8 @@ with tab5:
                     st.session_state.agenda.Operatore.iloc[i] = agenda_edit.Operatore.iloc[j]
                     st.session_state.agenda.Durata_stimata.iloc[i] = agenda_edit.Durata_stimata.iloc[j]
                     st.session_state.agenda.Data.iloc[i] = agenda_edit.Data.iloc[j]
+                    st.session_state.agenda.IstruzioniOperative.iloc[i] = agenda_edit.IstruzioniOperative.iloc[j]
+
 
 
                     
@@ -759,7 +761,8 @@ with tab5:
     
 
     agenda_edit['Ordine_intervento'] =  agenda_edit['Ordine_intervento'].astype(float)
-    agenda_edit = st.data_editor(agenda_edit[layout['Agenda_edit']],column_config={'Operatore':st.column_config.SelectboxColumn(options=operatori)} ,on_change=None)
+    agenda_edit = st.data_editor(agenda_edit[layout['Agenda_edit']],column_config={'Operatore':st.column_config.SelectboxColumn(options=operatori),
+                                                                                   'Data':st.column_config.DateColumn()} ,on_change=None)
 
     submit_button2 = st.button(label='Modifica agenda', on_click=callback_modifica_agenda)
 
