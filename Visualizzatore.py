@@ -121,7 +121,9 @@ layout  = {'Layout_select':['Check','Cliente','Sito','N_op','Op_vincolo','Indiri
 
             'Scacchiera' : ['Durata_viaggio','Inizio','Fine','Durata_stimata','Cliente' ,'Indirizzo Sito' ,'IstruzioniOperative', 'Servizio'],
 
-            'Refresh' : ['ID', 'Confronto','key']               
+            'Refresh' : ['ID', 'Confronto','key']  ,   
+
+            'Mappa'  : ['Check','Cliente','Durata_stimata','Servizio','Sito','Indirizzo Sito']       
                                                         
                             }
 
@@ -517,10 +519,12 @@ with tab4:
                 st.write('Cliente {} non visibile sulla mappa per mancanza di coordinate su Byron'.format(work.Cliente.iloc[i]))
                 pass
             
-            
-        folium_static(mappa,width=1800,height=800)
+        sxmappa, dxmappa = st.columns([2,1])    
+        with sxmappa:
+            folium_static(mappa,width=1300,height=800)
 
-        work = st.data_editor(work[layout['Layout_select']])
+        with dxmappa:
+            work = st.data_editor(work[layout['Mappa']],height=800)
 
         sx4, spazio1, cx4, dx4 =st.columns([4,1,3,2])
 
@@ -533,7 +537,7 @@ with tab4:
             work['Data'] = data_pianificazione  
             agenda_work = st.session_state.agenda.copy()
             agenda_work = agenda_work[agenda_work.Operatore == nome_cognome]
-            agenda_work = agenda_work[agenda_work.Data == scelta_giorno]
+            agenda_work = agenda_work[agenda_work.Data == data_pianificazione]
             agenda_work[layout['Layout_agenda_work']]
             
     # Cruscotto dati giornata
@@ -604,6 +608,9 @@ with tab5:
                     st.session_state.agenda.Ordine_intervento.iloc[i] = agenda_edit.Ordine_intervento.iloc[j]
                     st.session_state.agenda.Operatore.iloc[i] = agenda_edit.Operatore.iloc[j]
                     st.session_state.agenda.Durata_stimata.iloc[i] = agenda_edit.Durata_stimata.iloc[j]
+                    st.session_state.agenda.Data.iloc[i] = agenda_edit.Data.iloc[j]
+
+
                     
                     #calcolo ora di fine + viaggio
 
@@ -751,7 +758,8 @@ with tab5:
     
 
     agenda_edit['Ordine_intervento'] =  agenda_edit['Ordine_intervento'].astype(float)
-    agenda_edit = st.data_editor(agenda_edit[layout['Agenda_edit']], on_change=None)
+    agenda_edit = st.data_editor(agenda_edit[layout['Agenda_edit']],column_config={'Operatore':st.column_config.SelectboxColumn(options=operatori)} ,on_change=None)
+
     submit_button2 = st.button(label='Modifica agenda', on_click=callback_modifica_agenda)
 
     urgente = st.toggle(':red[Aggiungi urgente]')
