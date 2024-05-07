@@ -141,7 +141,10 @@ with tab4:
     altri_siti=pd.read_csv(percorso_altri)
     altri_siti = altri_siti.drop_duplicates()
 
+    altri_siti['SitoTerritoriale']=np.where(altri_siti['SitoTerritoriale'].astype(str)=='nan','ND',altri_siti['SitoTerritoriale'])
+
     siti_unici = altri_siti['SitoTerritoriale'].unique()
+    
     
     #scelta_giorno = st.date_input('Inserire data da pianificare').day
 
@@ -397,7 +400,8 @@ with tab4:
     scelta_giorno = st.date_input('Inserire data da pianificare')
     scelta_sito = st.multiselect('Selezionare Sito', siti_unici)
     if not scelta_sito:
-         st.stop()
+         #st.stop()
+         scelta_sito=siti_unici
     work = st.session_state.altri_siti.copy()
 
     work = work[[any(sito in word for sito in scelta_sito) for word in work['SitoTerritoriale'].astype(str)]]
