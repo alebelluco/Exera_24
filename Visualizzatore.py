@@ -652,7 +652,7 @@ with tab5:
                             #st.write('problema')
                             pass
                                     
-        #st.session_state.agenda = st.session_state.agenda.sort_values(by=['Data','Operatore','Ordine_intervento'])
+        st.session_state.agenda = st.session_state.agenda.sort_values(by=['Data','Operatore','Ordine_intervento'])
         st.session_state.agenda = test_agenda
 
     def callback_nota():
