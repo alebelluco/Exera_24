@@ -606,18 +606,16 @@ with tab4:
 with tab5:
 
     def callback_modifica_agenda():
-        for i in range(len(st.session_state.agenda)):
+        test_agenda = st.session_state.agenda.copy()
+        for i in range(len(test_agenda)):
             for j in range(len(agenda_edit)):
-                if agenda_edit.ID.iloc[j] == st.session_state.agenda.ID.iloc[i]:
-                    st.session_state.agenda.Inizio.iloc[i] = agenda_edit.Inizio.iloc[j]#.time()
-                    st.session_state.agenda.Ordine_intervento.iloc[i] = agenda_edit.Ordine_intervento.iloc[j]
-                    st.session_state.agenda.Operatore.iloc[i] = agenda_edit.Operatore.iloc[j]
-                    st.session_state.agenda.Durata_stimata.iloc[i] = agenda_edit.Durata_stimata.iloc[j]
-                    st.session_state.agenda.Data.iloc[i] = agenda_edit.Data.iloc[j]
-                    st.session_state.agenda.IstruzioniOperative.iloc[i] = agenda_edit.IstruzioniOperative.iloc[j]
-
-
-
+                if agenda_edit.ID.iloc[j] == test_agenda.ID.iloc[i]:
+                    test_agenda.Inizio.iloc[i] = agenda_edit.Inizio.iloc[j]#.time()
+                    test_agenda.Ordine_intervento.iloc[i] = agenda_edit.Ordine_intervento.iloc[j]
+                    test_agenda.Operatore.iloc[i] = agenda_edit.Operatore.iloc[j]
+                    test_agenda.Durata_stimata.iloc[i] = agenda_edit.Durata_stimata.iloc[j]
+                    test_agenda.Data.iloc[i] = agenda_edit.Data.iloc[j]
+                    test_agenda.IstruzioniOperative.iloc[i] = agenda_edit.IstruzioniOperative.iloc[j]
                     
                     #calcolo ora di fine + viaggio
 
@@ -628,7 +626,7 @@ with tab5:
                             pass
                         durata = agenda_edit.Durata_stimata.iloc[j]
                         try:
-                            st.session_state.agenda.Fine.iloc[i] = str((start + timedelta(minutes=durata)).time())
+                            test_agenda.Fine.iloc[i] = str((start + timedelta(minutes=durata)).time())
                         except:
                             pass #se non è stato inserito un orario faccio stop
                         
@@ -644,17 +642,18 @@ with tab5:
                         except:
                             last_viaggio = 0
 
-                        st.session_state.agenda.Durata_viaggio.iloc[i] = last_viaggio
+                        test_agenda.Durata_viaggio.iloc[i] = last_viaggio
                         try:
                             if j != 0:
-                                st.session_state.agenda.Arrivo_da_precedente.iloc[i] = str((datetime.strptime(str(agenda_edit.Fine.iloc[j-1]), '%H:%M:%S')+timedelta(minutes=last_viaggio)).time())[0:8]
+                                test_agenda.Arrivo_da_precedente.iloc[i] = str((datetime.strptime(str(agenda_edit.Fine.iloc[j-1]), '%H:%M:%S')+timedelta(minutes=last_viaggio)).time())[0:8]
                             else:
-                                st.session_state.agenda.Arrivo_da_precedente.iloc[i] = None
+                                test_agenda.Arrivo_da_precedente.iloc[i] = None
                         except:
                             #st.write('problema')
                             pass
                                     
-                    st.session_state.agenda = st.session_state.agenda.sort_values(by=['Data','Operatore','Ordine_intervento'])
+        #st.session_state.agenda = st.session_state.agenda.sort_values(by=['Data','Operatore','Ordine_intervento'])
+        st.session_state.agenda = test_agenda
 
     def callback_nota():
         dic_note[utente][str(data_agenda)] = dic_campi_note[utente]
