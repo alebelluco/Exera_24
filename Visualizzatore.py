@@ -252,7 +252,7 @@ with tab4:
         check = st.session_state.agenda.copy()
         check['Confronto']=None
         for i in range(len(check)):
-            check['Confronto'].iloc[i] = str(list([check.Operatore.iloc[i], check.Inizio.iloc[i], check.Fine.iloc[i]]))
+            check['Confronto'].iloc[i] = str(list([check.Operatore.iloc[i], check.Inizio.iloc[i], check.Fine.iloc[i],check.Ordine_intervento.iloc[i]]))
         #check = check[layout['Refresh']]
         #check['data_string'] = [str(data) for data in check.Data]
         #check['key']= check['data_string']+check['Operatore']
@@ -261,7 +261,7 @@ with tab4:
             last = st.session_state.last_up.copy()
             last['Confronto']=None
             for i in range(len(last)):
-                last['Confronto'].iloc[i] = str(list([last.Operatore.iloc[i], last.Inizio.iloc[i], last.Fine.iloc[i]]))
+                last['Confronto'].iloc[i] = str(list([last.Operatore.iloc[i], last.Inizio.iloc[i], last.Fine.iloc[i],last.Ordine_intervento.iloc[i]]))
 
             #st.write('last',last)#-------------------------------------------------------
 
