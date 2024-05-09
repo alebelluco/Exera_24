@@ -728,6 +728,7 @@ with tab5:
     agenda_edit = st.session_state.agenda.copy()
     agenda_edit = agenda_edit[agenda_edit['Operatore'] == op_modifica]
     agenda_edit = agenda_edit[agenda_edit.Data == data_agenda]
+    agenda_edit = agenda_edit.sort_values(by='Ordine_intervento')
     
     try:
         open_agenda = (agenda_edit.lat.iloc[0],  agenda_edit.lng.iloc[0])
