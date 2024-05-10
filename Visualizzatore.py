@@ -491,7 +491,9 @@ with tab4:
         except:
             lat_inizio = work.lat.iloc[1]
             lng_inizio = work.lng.iloc[0]
-
+          
+        lat_inizio = coordinate_exera[1]
+        lng_inizio = coordinate_exera[0]
 
         #mappa=folium.Map(location=inizio,zoom_start=15)
         mappa=folium.Map(location=(lat_inizio,lng_inizio),zoom_start=15)
