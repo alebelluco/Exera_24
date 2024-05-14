@@ -123,8 +123,12 @@ layout  = {'Layout_select':['Check','Cliente','Sito','N_op','Op_vincolo','Indiri
 
             'Refresh' : ['ID', 'Confronto','key']  ,   
 
-            'Mappa'  : ['Check','Cliente','Durata_stimata', 'Servizio','Sito','N_op','Op_vincolo','Indirizzo Sito','IstruzioniOperative','orari','Periodicita','SitoTerritoriale','Citta',
-                            'ID','lat','lng','Operatore','date_range','Mensile']      
+            'Mappa'  : ['Check','Cliente','Durata_stimata', 'Servizio','Sito','N_op','Op_vincolo','Indirizzo Sito','orari','IstruzioniOperative','Periodicita','SitoTerritoriale','Citta',
+                            'ID','lat','lng','Operatore','date_range','Mensile']  ,
+
+            'Mappa2'  : ['S','Check','Cliente','Durata_stimata','Servizio','Sito','N_op','Op_vincolo','Indirizzo Sito',
+                         'IstruzioniOperative','Periodicita','SitoTerritoriale','ID','lat','lng','Operatore','date_range',
+                         'Mensile','ultimo_intervento','Ritardo']               
                                                         
                             }
 
@@ -165,9 +169,10 @@ with tab4:
         except:
             st.session_state.altri_siti = altri_siti.copy()
 
-        st.session_state.altri_siti['Durata_stimata'] = st.session_state.altri_siti['Durata_stimata'].str.replace(',','.')
+        #st.session_state.altri_siti['Durata_stimata'] = st.session_state.altri_siti['Durata_stimata'].str.replace(',','.')
         st.session_state.altri_siti['lat'] = st.session_state.altri_siti['lat'].str.replace(',','.')
         st.session_state.altri_siti['lng'] = st.session_state.altri_siti['lng'].str.replace(',','.')
+        st.session_state.altri_siti['Durata_stimata'] = st.session_state.altri_siti['Durata_stimata'].str.replace(',','.')
         st.session_state.altri_siti['Durata_stimata'] = st.session_state.altri_siti['Durata_stimata'].astype(float)
         st.session_state.altri_siti['key_distanze'] = st.session_state.altri_siti['Cliente']+" | "+st.session_state.altri_siti['Indirizzo Sito']
         #st.session_state.siti_unici = st.session_state.altri_siti['SitoTerritoriale'].unique()
@@ -180,7 +185,6 @@ with tab4:
         #st.session_state.altri_siti = st.session_state.altri_siti.merge(vincolo_nop, how='left',left_on='ID',right_on='ID')   
         #st.session_state.altri_siti = st.session_state.altri_siti.rename(columns={'N_op_x':'N_op','Op_vincolo_x':'Op_vincolo'})
         #st.session_state.altri_siti = st.session_state.altri_siti.drop(columns=['Note','Target_range','no_spazi','appoggio','appoggio2','N_op_y','Op_vincolo_y'])
-
 
     if 'agenda' not in st.session_state:
         try:
@@ -252,7 +256,7 @@ with tab4:
         check = st.session_state.agenda.copy()
         check['Confronto']=None
         for i in range(len(check)):
-            check['Confronto'].iloc[i] = str(list([check.Operatore.iloc[i], check.Inizio.iloc[i], check.Fine.iloc[i],check.Ordine_intervento.iloc[i]]))
+            check['Confronto'].iloc[i] = str(list([check.Operatore.iloc[i], check.Inizio.iloc[i], check.Fine.iloc[i],check.Ordine_intervento.iloc[i],check.IstruzioniOperative.iloc[i]]))
         #check = check[layout['Refresh']]
         #check['data_string'] = [str(data) for data in check.Data]
         #check['key']= check['data_string']+check['Operatore']
@@ -261,14 +265,21 @@ with tab4:
             last = st.session_state.last_up.copy()
             last['Confronto']=None
             for i in range(len(last)):
-                last['Confronto'].iloc[i] = str(list([last.Operatore.iloc[i], last.Inizio.iloc[i], last.Fine.iloc[i],last.Ordine_intervento.iloc[i]]))
+                last['Confronto'].iloc[i] = str(list([last.Operatore.iloc[i], last.Inizio.iloc[i], last.Fine.iloc[i], last.Ordine_intervento.iloc[i],last.IstruzioniOperative.iloc[i]]))
 
             #st.write('last',last)#-------------------------------------------------------
 
             compare = last.merge(check, how='outer', left_on='ID',right_on='ID')
+
+            
             compare['compare'] = compare['Confronto_x'] == compare['Confronto_y']
+            #st.write('compare',compare)#--------------------------------------------------
+
             compare = compare[compare['compare'] == False]
+
+
             compare['Azione'] = None
+            
 
             for i in range(len(compare)):
                 if compare.Operatore_x.astype(str).iloc[i] == 'nan':
@@ -403,30 +414,43 @@ with tab4:
          #st.stop()
          scelta_sito=siti_unici
     work = st.session_state.altri_siti.copy()
+    work_rit = st.session_state.altri_siti.copy()
 
     work = work[[any(sito in word for sito in scelta_sito) for word in work['SitoTerritoriale'].astype(str)]]
     
     if st.toggle('Mostra tutti gli interventi del mese'):
         work = work
-        improrogabili = list(work.ID[[len(date)==1 for date in work.date_range ]])
+        #improrogabili = list(work.ID[[len(date)==1 for date in work.date_range ]])
+        improrogabili = list(work[work.S == 'F*'].ID)
         st.write(f'{len(improrogabili)} interventi improrogabili nel sito nel mese')
 
     else:
-        work = work[[str(scelta_giorno.day) in tgtrange for tgtrange in work.date_range]]
         #st.write('work',work)
-
-        improrogabili = list(work.ID[[len(date)==1 for date in work.date_range ]])
+        work = work[[str(scelta_giorno.day) in tgtrange for tgtrange in work.date_range]]
+        improrogabili = list(work[work.S == 'F*'].ID)
         st.write(f'{len(improrogabili)} interventi improrogabili nel sito nella data selezionata')
-
+  
 
     if st.toggle('Mostra improrogabili'):
         try:            
-            work = work[[len(date)==1 for date in work.date_range ]]
+            work = work[work.S == 'F*']
         except:
             st.write('nessun intervento')
     else:       
         work = work
 
+
+    if st.toggle('Mostra interventi in ritardo'):
+        work = work_rit
+        try:
+            work = work[work['Ritardo'] == 'x']
+        except:
+            st.write('nessun intervento in ritardo sul sito')
+
+    else:
+        work = work
+
+ 
 
     if st.toggle('Mostra interventi con disponibilità ristretta'):
         try:            
@@ -448,6 +472,7 @@ with tab4:
         except:
             st.write('Nessun intervento')
 
+
     work['Operatore'] = None
     
     try:
@@ -462,6 +487,8 @@ with tab4:
     else:
          st.write(':orange[Nessun intervento nei siti selezionati]')
          inizio = (coordinate_exera[1],coordinate_exera[0])
+
+
 
     try:
         mensili = {'si':'red','no':'blue'}
@@ -480,20 +507,27 @@ with tab4:
         try:
             lat_inizio = centro_mappa.lat.iloc[-1]
             lng_inizio = centro_mappa.lng.iloc[-1]
-            if str(lat_inizio)=='nan':
+            if (not lat_inizio) or (str(lat_inizio)=='nan'):
+                lat_inizio = coordinate_exera[0]
+                lng_inizio = coordinate_exera[0]
                 lat_inizio = work.lat.iloc[1]
                 lng_inizio = work.lng.iloc[0]
-                if str(lat_inizio)=='nan':
+                if (not lat_inizio) or (str(lat_inizio)=='nan'):
                     lat_inizio = coordinate_exera[1]
                     lng_inizio = coordinate_exera[0]
 
      
         except:
-            lat_inizio = work.lat.iloc[1]
-            lng_inizio = work.lng.iloc[0]
-          
-        lat_inizio = coordinate_exera[1]
-        lng_inizio = coordinate_exera[0]
+
+            lat_inizio = coordinate_exera[1]
+            lng_inizio = coordinate_exera[0]
+            #lat_inizio = work.lat.iloc[1]
+            #lng_inizio = work.lng.iloc[0]
+
+
+        #st.write(lat_inizio)
+        #lat_inizio = coordinate_exera[1]
+        #lng_inizio = coordinate_exera[0]
 
         #mappa=folium.Map(location=inizio,zoom_start=15)
         mappa=folium.Map(location=(lat_inizio,lng_inizio),zoom_start=15)
@@ -510,6 +544,20 @@ with tab4:
                     ).add_to(mappa)
         
         for i in range(len(work)):
+
+            if work.IstruzioniOperative.astype(str).iloc[i] != 'nan':
+                ist = 'Note: ' + work.IstruzioniOperative.astype(str).iloc[i]
+            else:
+                ist = 'Nessuna nota'
+
+
+            if work.ultimo_intervento.astype(str).iloc[i] != 'nan':
+                ultimo = 'Ultimo intervento: \n ' + work.ultimo_intervento.astype(str).iloc[i][0:10]
+            else:
+                ultimo= 'Pianificazione libera'
+
+
+
             try:
                 folium.CircleMarker(location=[work.lat.iloc[i], work.lng.iloc[i]],
                                     radius=7,
@@ -518,21 +566,23 @@ with tab4:
                     fill=True,
                     fill_opacity=1,
                     opacity=1,
-                    popup=work.Cliente.iloc[i]+'----------'+ work.Servizio.iloc[i]+'--------- Durata: '+
-                        str(work['Durata_stimata'].iloc[i]),
-                    #tooltip=cluster,
+                    popup=ultimo +'   \n  '+ ist,
+                    tooltip=work.Cliente.iloc[i]+' | '+ work.Servizio.iloc[i]+' | '+' Durata: '+
+                        str(work['Durata_stimata'].iloc[i])
                     ).add_to(mappa)
             except:
                 st.write('Cliente {} non visibile sulla mappa per mancanza di coordinate su Byron'.format(work.Cliente.iloc[i]))
                 pass
-            
+        #
+       # st.stop() 
+
         sxmappa, dxmappa = st.columns([2,1])    
         with sxmappa:
             folium_static(mappa,width=1300,height=800)
+            #st.write('work',work[layout['Mappa']])
 
         with dxmappa:
-            work = st.data_editor(work[layout['Mappa']],height=800)
-
+            work = st.data_editor(work[layout['Mappa2']],height=800)
         sx4, spazio1, cx4, dx4 =st.columns([4,1,3,2])
 
     # view agenda    
@@ -657,11 +707,62 @@ with tab5:
         st.session_state.agenda = st.session_state.agenda.sort_values(by=['Data','Operatore','Ordine_intervento'])
         st.session_state.agenda = test_agenda
 
+    def callback_modifica_agenda2():
+        
+        for i in range(len(st.session_state.agenda)):
+            for j in range(len(agenda_edit)):
+                if agenda_edit.ID.iloc[j] == st.session_state.agenda.ID.iloc[i]:
+                    st.session_state.agenda.Inizio.iloc[i] = agenda_edit.Inizio.iloc[j]#.time()
+                    st.session_state.agenda.Ordine_intervento.iloc[i] = agenda_edit.Ordine_intervento.iloc[j]
+                    st.session_state.agenda.Operatore.iloc[i] = agenda_edit.Operatore.iloc[j]
+                    st.session_state.agenda.Durata_stimata.iloc[i] = agenda_edit.Durata_stimata.iloc[j]
+                    st.session_state.agenda.Data.iloc[i] = agenda_edit.Data.iloc[j]
+                    st.session_state.agenda.IstruzioniOperative.iloc[i] = agenda_edit.IstruzioniOperative.iloc[j]
+
+
+
+                    
+                    #calcolo ora di fine + viaggio
+
+                    if calcola_distanze:
+                        try:
+                            start = datetime.strptime(str(agenda_edit.Inizio.iloc[j]),'%H:%M')
+                        except:
+                            pass
+                        durata = agenda_edit.Durata_stimata.iloc[j]
+                        try:
+                            st.session_state.agenda.Fine.iloc[i] = str((start + timedelta(minutes=durata)).time())
+                        except:
+                            pass #se non è stato inserito un orario faccio stop
+                        
+                        arrivo_agenda = (agenda_edit.lng.iloc[j],agenda_edit.lat.iloc[j])
+                        if j == 0:
+                            partenza_agenda = coordinate_exera
+                        else:
+                            partenza_agenda = (agenda_edit.lng.iloc[j-1],agenda_edit.lat.iloc[j-1])
+
+                        try:
+                            res_agenda = client.directions((partenza_agenda , arrivo_agenda))
+                            last_viaggio = res_agenda['routes'][0]['summary']['duration']/60
+                        except:
+                            last_viaggio = 0
+
+                        st.session_state.agenda.Durata_viaggio.iloc[i] = last_viaggio
+                        try:
+                            if j != 0:
+                                st.session_state.agenda.Arrivo_da_precedente.iloc[i] = str((datetime.strptime(str(agenda_edit.Fine.iloc[j-1]), '%H:%M:%S')+timedelta(minutes=last_viaggio)).time())[0:8]
+                            else:
+                                st.session_state.agenda.Arrivo_da_precedente.iloc[i] = None
+                        except:
+                            #st.write('problema')
+                            pass
+                                    
+        st.session_state.agenda = st.session_state.agenda.sort_values(by=['Data','Operatore','Ordine_intervento'])
+
     def callback_nota():
         dic_note[utente][str(data_agenda)] = dic_campi_note[utente]
         to_upload = dic_note[utente]
         pe.upload_dict(username, token, to_upload,repository_name, path_note_git[utente])
-
 
     h_note =  300
     h_note2 = 125
