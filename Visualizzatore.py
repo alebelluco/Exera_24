@@ -29,6 +29,7 @@ utente = st.sidebar.selectbox('User:',['Seleziona',
                                        'Simona Porro',
                                        'Simona Lavezzo'
                                        ])
+
 if utente=='Seleziona':
     st.stop()
 
@@ -36,7 +37,6 @@ cred = st.sidebar.file_uploader('credenziali')
 if not cred:
     st.stop()
 credenziali=pd.read_excel(cred)
-
 
 username = credenziali.Dati.iloc[0]
 token = credenziali.Dati.iloc[1]
@@ -126,7 +126,7 @@ layout  = {'Layout_select':['Check','Cliente','Sito','N_op','Op_vincolo','Indiri
             'Mappa'  : ['Check','Cliente','Durata_stimata', 'Servizio','Sito','N_op','Op_vincolo','Indirizzo Sito','orari','IstruzioniOperative','Periodicita','SitoTerritoriale','Citta',
                             'ID','lat','lng','Operatore','date_range','Mensile']  ,
 
-            'Mappa2'  : ['S','Check','Cliente','Durata_stimata','Servizio','Sito','N_op','Op_vincolo','Indirizzo Sito',
+            'Mappa2'  : ['S','PrezzoEUR','Check','Cliente','Durata_stimata','Servizio','Sito','N_op','Op_vincolo','Indirizzo Sito',
                          'IstruzioniOperative','Periodicita','SitoTerritoriale','ID','lat','lng','Operatore','date_range',
                          'Mensile','ultimo_intervento','Ritardo']               
                                                         
@@ -568,7 +568,7 @@ with tab4:
                     opacity=1,
                     popup=ultimo +'   \n  '+ ist,
                     tooltip=work.Cliente.iloc[i]+' | '+ work.Servizio.iloc[i]+' | '+' Durata: '+
-                        str(work['Durata_stimata'].iloc[i])
+                        str(work['Durata_stimata'].iloc[i]) + '| Valore: '+str(work['PrezzoEUR'].iloc[i])+'€'
                     ).add_to(mappa)
             except:
                 st.write('Cliente {} non visibile sulla mappa per mancanza di coordinate su Byron'.format(work.Cliente.iloc[i]))
